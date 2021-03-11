@@ -41,11 +41,7 @@ namespace NAudioTest.Engine
 		public void removeActiveMIDIKey(int midiNote) {
 			ISampleProvider value;
 			if (activeMIDIKeys.TryGetValue(midiNote, out value)) {
-				if (value is PortamentoSineWaveProvider) {
-					PortamentoSineWaveProvider output = (PortamentoSineWaveProvider)value;
-					output.StopAudio = true;
-					activeMIDIKeys.Remove(midiNote);
-				} else if (value is SineWaveProvider) {
+				if (value is SineWaveProvider) {
 					SineWaveProvider output = (SineWaveProvider)value;
 					output.StopAudio = true;
 					activeMIDIKeys.Remove(midiNote);
