@@ -38,7 +38,7 @@ namespace NAudioTest.WaveProvider
 		}
 
 		public int Read(float[] buffer, int offset, int count) {
-			if (audioStopped) return 0;
+			if (stopAudio) return 0;
 
 			SineWaveTable sw = SineWaveTable.Instance;
 
