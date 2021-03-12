@@ -14,7 +14,6 @@ namespace NAudioTest.WaveProvider.Tables
 		private int sampleRate;
 
 		public SineWaveTable(int sampleRate) {
-			Console.WriteLine("Sine Wave table being generated");
 			this.sampleRate = sampleRate;
 			this.waveTable = new float[sampleRate];
 			GenerateWaveTable();
