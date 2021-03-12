@@ -15,23 +15,65 @@ namespace NAudioTest.Engine
 		private MIDITools midiTools;
 		private int sampleRate;
 
+		private SineWaveProvider[] activeNotes;
+
 		public AudioPlaybackEngine(int sampleRate = 44100, int channelCount = 2) {
 			this.sampleRate = sampleRate;
-
 			midiTools = new MIDITools();
 
 			activeMIDIKeys = new Dictionary<int, ISampleProvider>();
 			outputDevice = new WasapiOut();
 			mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channelCount));
 			mixer.ReadFully = true;
-			
+
+			InitialiseActiveNotes(10);
+
 			outputDevice.Init(mixer);
 			outputDevice.Play();
 		}
 
+		private void InitialiseActiveNotes(int activeNoteSize) {
+			activeNotes = new SineWaveProvider[activeNoteSize];
+
+			for (int i = 0; i < activeNoteSize; i++) {
+				activeNotes[i] = new SineWaveProvider(440) {
+					Volume = 0.0f
+				};
+				mixer.AddMixerInput(activeNotes[i]);
+			}
+		}
+
+		private int getInactiveNoteIndex() {
+			bool found = false;
+			int index = 0;
+			while (!found) {
+				if (index >= 10)
+					break;
+
+				if (!activeNotes[index].Playing)
+					return index;
+				else
+					index++;
+			}
+			return -1;
+		}
+
 		public void addActiveMIDIKey(int midiNote) {
 			int frequency = midiTools.GetFrequencyFromMIDINote(midiNote);
-			SineWaveProvider output = new SineWaveProvider(frequency, sampleRate);
+			//SineWaveProvider output = new SineWaveProvider(frequency, sampleRate);
+
+
+			int inactiveKeyIndex = getInactiveNoteIndex();
+
+			if (inactiveKeyIndex == -1) {
+				Console.WriteLine("Can not add any more key inputs!");
+				return;
+			}
+
+			SineWaveProvider output = activeNotes[inactiveKeyIndex];
+			output.Frequency = frequency;
+			output.Volume = 0.2f;
+			output.Playing = true;
 
 			activeMIDIKeys.Add(midiNote, output);
 
@@ -43,7 +85,7 @@ namespace NAudioTest.Engine
 			if (activeMIDIKeys.TryGetValue(midiNote, out value)) {
 				if (value is SineWaveProvider) {
 					SineWaveProvider output = (SineWaveProvider)value;
-					output.StopAudio = true;
+					output.Playing = false;
 					activeMIDIKeys.Remove(midiNote);
 				}
 			}

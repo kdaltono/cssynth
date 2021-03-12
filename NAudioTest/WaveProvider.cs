@@ -10,7 +10,7 @@ namespace NAudioTest.WaveProvider
 		private double frequency;
 		private double indexIncrement;
 		private int sampleRate;
-		private bool stopAudio;
+		private bool playing;
 
 		public SineWaveProvider(float frequency, int sampleRate = 44100) {
 			WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
@@ -18,25 +18,34 @@ namespace NAudioTest.WaveProvider
 			this.phase = 0;
 			this.frequency = frequency;
 			this.sampleRate = sampleRate;
-			this.stopAudio = false;
+			this.playing = false;
 			Volume = 0.2f;
 		}
 
 		public float Volume { get; set; }
 
-		public WaveFormat WaveFormat { get; private set; }
-
-		public bool StopAudio {
+		public double Frequency {
 			get {
-				return stopAudio;
+				return frequency;
 			}
 			set {
-				stopAudio = value;
+				frequency = value;
+			}
+		}
+
+		public WaveFormat WaveFormat { get; private set; }
+
+		public bool Playing {
+			get {
+				return playing;
+			}
+			set {
+				playing = value;
 			}
 		}
 
 		public int Read(float[] buffer, int offset, int count) {
-			if (stopAudio) return 0;
+			if (!playing) return 0;
 
 			SineWaveTable sw = SineWaveTable.Instance;
 
