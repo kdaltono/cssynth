@@ -50,30 +50,20 @@ namespace NAudioTest.WaveProvider
 				return playing;
 			}
 			set {
-				// May be able to get rid of 'playing' bool.
 				if (value == true) {
 					playing = true;
 					ramp = false;
 					rampValue = 0;
 					rampInc = 0;
-
-					/*startFade = true;
-					endFade = false;*/
 				} else {
 					playing = false;
-
-					/*startFade = false;
-					endFade = true;*/
 				}
 			}
 		}
 
 		public void Ramp(float finalValue, float time) {
 			rampValue = finalValue;
-			if (finalValue > Volume)
-				rampInc = time / sampleRate;
-			else
-				rampInc = -(time / sampleRate);
+			rampInc = (finalValue - Volume) / (time * sampleRate);
 			ramp = true;
 			Console.WriteLine("Ramp values set: \nRamp Value: " + rampValue + "\nOriginal Value: " + Volume + "\nRamp Inc: " + rampInc);
 		}
@@ -82,15 +72,13 @@ namespace NAudioTest.WaveProvider
 			if (!playing)
 				return 0;
 
-			if (ramp)
-				UpdateVolume();
-
 			SineWaveTable sw = SineWaveTable.Instance;
 
 			double frqTel = sw.GetWaveTableLength() / sampleRate;
 			indexIncrement = frqTel * frequency;
 
 			for (int n = 0; n < count; ++n) {
+				if (ramp) UpdateVolume();
 				int index = (int)phase % sw.GetWaveTableLength();
 
 				buffer[n + offset] = sw.GetWaveSample(index) * Volume;

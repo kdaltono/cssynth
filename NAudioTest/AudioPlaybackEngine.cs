@@ -74,7 +74,7 @@ namespace NAudioTest.Engine
 			output.Frequency = frequency;
 			output.Volume = 0.0f;
 			output.Playing = true;
-			output.Ramp(0.2f, 40.0f);
+			output.Ramp(0.2f, 0.5f);
 
 			activeMIDIKeys.Add(midiNote, output);
 
@@ -87,7 +87,7 @@ namespace NAudioTest.Engine
 				if (value is SineWaveProvider) {
 					SineWaveProvider output = (SineWaveProvider)value;
 					/*output.Playing = false;*/
-					output.Ramp(0.0f, 40.0f);
+					output.Ramp(0.0f, 1.5f);
 					activeMIDIKeys.Remove(midiNote);
 				}
 			}

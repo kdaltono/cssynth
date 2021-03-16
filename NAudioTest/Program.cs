@@ -1,7 +1,5 @@
-﻿using NAudio.Wave;
-using NAudioTest.Engine;
+﻿using NAudioTest.Engine;
 using NAudioTest.IO;
-using NAudioTest.WaveProvider;
 using NAudioTest.WaveProvider.Tables;
 using System;
 
