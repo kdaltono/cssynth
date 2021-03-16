@@ -26,7 +26,7 @@ namespace NAudioTest.Engine
 			mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channelCount));
 			mixer.ReadFully = true;
 
-			InitialiseActiveNotes(10);
+			InitialiseActiveNotes(49);
 
 			outputDevice.Init(mixer);
 			outputDevice.Play();
@@ -72,8 +72,9 @@ namespace NAudioTest.Engine
 
 			SineWaveProvider output = activeNotes[inactiveKeyIndex];
 			output.Frequency = frequency;
-			output.Volume = 0.2f;
+			output.Volume = 0.0f;
 			output.Playing = true;
+			output.Ramp(0.2f, 40.0f);
 
 			activeMIDIKeys.Add(midiNote, output);
 
@@ -85,7 +86,8 @@ namespace NAudioTest.Engine
 			if (activeMIDIKeys.TryGetValue(midiNote, out value)) {
 				if (value is SineWaveProvider) {
 					SineWaveProvider output = (SineWaveProvider)value;
-					output.Playing = false;
+					/*output.Playing = false;*/
+					output.Ramp(0.0f, 40.0f);
 					activeMIDIKeys.Remove(midiNote);
 				}
 			}

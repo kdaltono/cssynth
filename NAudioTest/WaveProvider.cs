@@ -12,10 +12,15 @@ namespace NAudioTest.WaveProvider
 		private int sampleRate;
 		private bool playing;
 
+		// Ramp Values:
+		private float rampValue;
+		private float rampInc;
+		private bool ramp;
+
 		// Hann Window Calculation:
-		private bool startFade;
+		/*private bool startFade;
 		private bool endFade;
-		private float fadeTime;
+		private float fadeTime;*/
 
 		public SineWaveProvider(float frequency, int sampleRate = 44100) {
 			WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
@@ -48,56 +53,77 @@ namespace NAudioTest.WaveProvider
 				// May be able to get rid of 'playing' bool.
 				if (value == true) {
 					playing = true;
+					ramp = false;
+					rampValue = 0;
+					rampInc = 0;
 
-					startFade = true;
-					endFade = false;
+					/*startFade = true;
+					endFade = false;*/
 				} else {
 					playing = false;
 
-					startFade = false;
-					endFade = true;
+					/*startFade = false;
+					endFade = true;*/
 				}
 			}
 		}
 
-		// Need to update this:
-		//	- When playing = false, and Volume > 0 -> decrease the volume to 0.
-		//		- This can also be considered 'delay' and should hopefully remove the pop at the end of a note.
+		public void Ramp(float finalValue, float time) {
+			rampValue = finalValue;
+			if (finalValue > Volume)
+				rampInc = time / sampleRate;
+			else
+				rampInc = -(time / sampleRate);
+			ramp = true;
+			Console.WriteLine("Ramp values set: \nRamp Value: " + rampValue + "\nOriginal Value: " + Volume + "\nRamp Inc: " + rampInc);
+		}
 
 		public int Read(float[] buffer, int offset, int count) {
 			if (!playing)
 				return 0;
+
+			if (ramp)
+				UpdateVolume();
 
 			SineWaveTable sw = SineWaveTable.Instance;
 
 			double frqTel = sw.GetWaveTableLength() / sampleRate;
 			indexIncrement = frqTel * frequency;
 
-			int numFadeSamples = (int)fadeTime * sampleRate;
-			int fadeCount = 0;
-			if (numFadeSamples > sampleRate) numFadeSamples = sampleRate;
-
 			for (int n = 0; n < count; ++n) {
 				int index = (int)phase % sw.GetWaveTableLength();
 
 				buffer[n + offset] = sw.GetWaveSample(index) * Volume;
 
-				// Start fade:
-				if (startFade && fadeCount < numFadeSamples) {
-					float weight = (float)(0.5 * (1 - Math.Cos(Math.PI * fadeCount / (numFadeSamples - 1))));
-					buffer[n + offset] *= weight;
-					fadeCount++;
-				}
-				else if (fadeCount >= numFadeSamples)
-					startFade = false;
-
 				phase += indexIncrement;
 				if (phase >= (double)sw.GetWaveTableLength()) {
 					phase -= (double)sw.GetWaveTableLength();
 				}
-				
 			}
 			return count;
+		}
+		private void UpdateVolume() {
+			if (rampInc > 0) {
+				if (Volume < rampValue)
+					Volume += rampInc;
+				if (Volume > rampValue) {
+					Volume = rampValue;
+					ramp = false;
+				}
+			} else if (rampInc < 0) {
+				if (Volume > rampValue)
+					Volume += rampInc;
+				if (Volume < rampValue) {
+					Volume = rampValue;
+					ramp = false;
+				}
+				if (Volume == 0) {
+					playing = false;
+				}
+			} else {
+				// If it is zero don't waste time doing calculations
+				return;
+			}
 		}
 	}
 }
