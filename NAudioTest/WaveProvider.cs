@@ -43,6 +43,7 @@ namespace NAudioTest.WaveProvider {
 			}
 			set {
 				frequency = value;
+				Console.WriteLine(String.Format("Frequency: {0}", frequency));
 			}
 		}
 

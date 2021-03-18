@@ -42,7 +42,36 @@ namespace NAudioTest.WaveProvider.Tables
 			}
 		}
 
-		// This needs to be created at runtime...
 		public static readonly SineWaveTable Instance = new SineWaveTable(44100);
+	}
+
+	public class SawWaveTable : IWaveTable {
+		private float[] waveTable;
+		private int sampleRate;
+		
+		public SawWaveTable(int sampleRate) {
+			SampleRate = sampleRate;
+			this.waveTable = new float[sampleRate];
+			GenerateWaveTable();
+		}
+
+		public void GenerateWaveTable() {
+			// TODO: Generate a 1Hz Saw Wave
+		}
+
+		public float GetWaveSample(int index) {
+			return waveTable[index];
+		}
+
+		public int SampleRate { 
+			get {
+				return sampleRate;
+			}
+			set {
+				sampleRate = value;
+			}
+		}
+
+		public static readonly SawWaveTable Instance = new SawWaveTable(44100);
 	}
 }
