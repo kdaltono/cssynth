@@ -5,6 +5,8 @@ namespace NAudioTest.WaveProvider.Tables
 	interface IWaveTable {
 		int SampleRate { get; set; }
 		void GenerateWaveTable();
+
+		int GetWaveTableLength();
 		float GetWaveSample(int index);
 	}
 
@@ -56,11 +58,28 @@ namespace NAudioTest.WaveProvider.Tables
 		}
 
 		public void GenerateWaveTable() {
-			// TODO: Generate a 1Hz Saw Wave
+			// TODO: This needs to be updated to be more sine wavey so that the sound isn't as sharp.
+			float sawWaveGrad = 2.0f / 44100.0f;
+			float sampleValue = 0.0f;
+
+			for (int index = 0; index < sampleRate; index++) {
+				if (sampleValue > 1.0f)
+					sampleValue = -1.0f;
+
+				if (sampleValue < -1.0f)
+					sampleValue = 1.0f;
+
+				waveTable[index] = sampleValue;
+				sampleValue += sawWaveGrad;
+			}
 		}
 
 		public float GetWaveSample(int index) {
 			return waveTable[index];
+		}
+
+		public int GetWaveTableLength() {
+			return waveTable.Length;
 		}
 
 		public int SampleRate { 

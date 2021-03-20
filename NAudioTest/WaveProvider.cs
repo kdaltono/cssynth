@@ -3,29 +3,20 @@ using NAudioTest.WaveProvider.Tables;
 using System;
 
 namespace NAudioTest.WaveProvider {
-	class SineWaveProvider : ISampleProvider {
-		public enum SoundStage {
-			Attack,
-			Decay,
-			Sustain,
-			Release
-		}
+	enum SoundStage {
+		Attack, Decay, Sustain, Release
+	}
 
-		private double phase;
-		private double frequency;
-		private double indexIncrement;
-		private int sampleRate;
-		private bool playing;
+	class WaveProvider {
+		protected double phase, frequency, indexIncrement;
+		protected int sampleRate;
+		protected bool playing;
 
 		// Attack Decay Sustain Release:
-		private SoundStage stage;
-		private float attackInc;
-		private float attackVol;
-		private float decayInc;
-		private float sustainVol;
-		private float releaseInc;
+		protected SoundStage stage;
+		protected float attackInc, attackVol, decayInc, sustainVol, releaseInc;
 
-		public SineWaveProvider(float frequency, int sampleRate = 44100) {
+		public WaveProvider(float frequency, int sampleRate = 44100) {
 			WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
 
 			this.phase = 0;
@@ -33,6 +24,14 @@ namespace NAudioTest.WaveProvider {
 			this.sampleRate = sampleRate;
 			this.playing = false;
 			Volume = 0.2f;
+		}
+
+		public void BeginPlay() {
+			stage = SoundStage.Attack;
+		}
+
+		public void BeginRelease() {
+			stage = SoundStage.Release;
 		}
 
 		public float Volume { get; set; }
@@ -43,11 +42,8 @@ namespace NAudioTest.WaveProvider {
 			}
 			set {
 				frequency = value;
-				Console.WriteLine(String.Format("Frequency: {0}", frequency));
 			}
 		}
-
-		public WaveFormat WaveFormat { get; private set; }
 
 		public bool Playing {
 			get {
@@ -58,7 +54,9 @@ namespace NAudioTest.WaveProvider {
 			}
 		}
 
-		public void SetRampValues(float attackLength, float attackVolume, float decayLength, float sustainVolume, 
+		public WaveFormat WaveFormat { get; set; }
+
+		public void SetRampValues(float attackLength, float attackVolume, float decayLength, float sustainVolume,
 			float releaseLength) {
 			SetAttackValues(attackLength, attackVolume);
 			SetSustainValues(sustainVolume);
@@ -66,17 +64,12 @@ namespace NAudioTest.WaveProvider {
 			SetReleaseValues(releaseLength);
 		}
 
-		// TODO:
 		public void SetAttackValues(float attackLength, float attackVolume) {
 			attackVol = attackVolume;
 			attackInc = (attackVol) / (attackLength * sampleRate);
 		}
 
-		public void SetSustainValues(float sustainVolume) {
-			sustainVol = sustainVolume;
-		}
-
-		public void SetDecayValues(float decayLength) { 
+		public void SetDecayValues(float decayLength) {
 			if (attackVol != sustainVol)
 				decayInc = (sustainVol - attackVol) / (decayLength * sampleRate);
 			else
@@ -87,12 +80,70 @@ namespace NAudioTest.WaveProvider {
 			releaseInc = (-sustainVol) / (releaseLength * sampleRate);
 		}
 
-		public void BeginPlay() {
-			stage = SoundStage.Attack;
+		public void SetSustainValues(float sustainVolume) {
+			sustainVol = sustainVolume;
 		}
 
-		public void BeginRelease() {
-			stage = SoundStage.Release;
+		public void UpdateVolume() {
+			switch (stage) {
+				case SoundStage.Attack:
+					UpdateAttackVolume();
+					break;
+				case SoundStage.Decay:
+					UpdateDecayVolume();
+					break;
+				case SoundStage.Sustain:
+					UpdateSustainVolume();
+					break;
+				case SoundStage.Release:
+					UpdateReleaseVolume();
+					break;
+				default:
+					throw new NullReferenceException("Wave Provider audio stage not set!");
+			}
+		}
+
+		private void UpdateAttackVolume() {
+			if (attackInc == 0.0f) return;
+
+			Volume += attackInc;
+			if ((attackInc > 0 && Volume > attackVol) ||
+				(attackInc < 0 && Volume < attackVol)) {
+				Volume = attackVol;
+				stage = SoundStage.Decay;
+			}
+		}
+
+		private void UpdateDecayVolume() {
+			if (decayInc == 0.0f) return;
+
+			Volume += decayInc;
+			if ((decayInc > 0 && Volume > sustainVol) ||
+				(decayInc < 0 && Volume < sustainVol)) {
+				Volume = sustainVol;
+				stage = SoundStage.Sustain;
+			}
+		}
+
+		private void UpdateSustainVolume() {
+			if (Volume != sustainVol)
+				Volume = sustainVol;
+		}
+
+		private void UpdateReleaseVolume() {
+			if (releaseInc == 0.0f) return; // This shouldn't ever be the case, but if it is then do it.
+
+			Volume += releaseInc;
+			bool releaseComplete = releaseInc < 0 && Volume < 0.0f;
+			if (releaseComplete) {
+				Volume = 0.0f;
+				playing = false;
+			}
+		}
+	}
+
+	class SineWaveProvider : WaveProvider, ISampleProvider {
+		public SineWaveProvider(float frequency, int sampleRate = 44100) : base(frequency, sampleRate) {
 		}
 
 		public int Read(float[] buffer, int offset, int count) {
@@ -116,65 +167,6 @@ namespace NAudioTest.WaveProvider {
 				}
 			}
 			return count;
-		}
-		private void UpdateVolume() {
-			// Update with ADSR values:
-
-			switch (stage) {
-				case SoundStage.Attack:
-					UpdateAttackVolume();
-					break;
-				case SoundStage.Decay:
-					UpdateDecayVolume();
-					break;
-				case SoundStage.Sustain:
-					UpdateSustainVolume();
-					break;
-				case SoundStage.Release:
-					UpdateReleaseVolume();
-					break;
-				default:
-					// This shouldn't happen.
-					throw new NullReferenceException("Wave Provider audio stage not set!");
-			}
-		}
-
-		private void UpdateAttackVolume() {
-			if (attackInc == 0.0f) return;
-
-			Volume += attackInc;
-			if ((attackInc > 0 && Volume > attackVol) ||
-				(attackInc < 0 && Volume < attackVol)) {
-				Volume = attackVol;
-				stage = SoundStage.Decay;
-			}
-		}
-
-		private void UpdateDecayVolume() {
-			if (decayInc == 0.0f) return;
-
-			Volume += decayInc;
-			if ((decayInc > 0 && Volume > sustainVol) || 
-				(decayInc < 0 && Volume < sustainVol)) {
-				Volume = sustainVol;
-				stage = SoundStage.Sustain;
-			}
-		}
-
-		private void UpdateSustainVolume() {
-			if (Volume != sustainVol)
-				Volume = sustainVol;
-		}
-
-		private void UpdateReleaseVolume() {
-			if (releaseInc == 0.0f) return; // This shouldn't ever be the case, but if it is then do it.
-
-			Volume += releaseInc;
-			bool releaseComplete = releaseInc < 0 && Volume < 0.0f;
-			if (releaseComplete) {
-				Volume = 0.0f;
-				playing = false;
-			}
 		}
 	}
 }

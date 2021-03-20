@@ -9,6 +9,7 @@ namespace NAudioTest
 	{
 		static void Main(string[] args) {
 			SineWaveTable.Instance.GenerateWaveTable();
+			SawWaveTable.Instance.GenerateWaveTable();
 			MIDIHandler io = new MIDIHandler();
 
 			Console.WriteLine("To stop audio playback, type \'stop\'");

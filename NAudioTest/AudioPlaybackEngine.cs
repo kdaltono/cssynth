@@ -39,6 +39,7 @@ namespace NAudioTest.Engine
 				activeNotes[i] = new SineWaveProvider(440) {
 					Volume = 0.0f
 				};
+
 				mixer.AddMixerInput(activeNotes[i]);
 			}
 		}
