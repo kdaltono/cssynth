@@ -1,7 +1,7 @@
 ﻿using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using NAudioTest.Midi;
-using NAudioTest.WaveProvider;
+using NAudioTest.WaveProviders;
 using System;
 using System.Collections.Generic;
 
@@ -15,7 +15,7 @@ namespace NAudioTest.Engine
 		private MIDITools midiTools;
 		private int sampleRate;
 
-		private SineWaveProvider[] activeNotes;
+		private SawWaveProvider[] activeNotes;
 
 		public AudioPlaybackEngine(int sampleRate = 44100, int channelCount = 2) {
 			this.sampleRate = sampleRate;
@@ -33,10 +33,10 @@ namespace NAudioTest.Engine
 		}
 
 		private void InitialiseActiveNotes(int activeNoteSize) {
-			activeNotes = new SineWaveProvider[activeNoteSize];
+			activeNotes = new SawWaveProvider[activeNoteSize];
 
 			for (int i = 0; i < activeNoteSize; i++) {
-				activeNotes[i] = new SineWaveProvider(440) {
+				activeNotes[i] = new SawWaveProvider(440) {
 					Volume = 0.0f
 				};
 
@@ -71,7 +71,7 @@ namespace NAudioTest.Engine
 				return;
 			}
 
-			SineWaveProvider output = activeNotes[inactiveKeyIndex];
+			SawWaveProvider output = activeNotes[inactiveKeyIndex];
 			output.Frequency = frequency;
 			output.Volume = 0.0f;
 			output.Playing = true; // Need to get rid of this feature
@@ -86,8 +86,8 @@ namespace NAudioTest.Engine
 		public void removeActiveMIDIKey(int midiNote) {
 			ISampleProvider value;
 			if (activeMIDIKeys.TryGetValue(midiNote, out value)) {
-				if (value is SineWaveProvider) {
-					SineWaveProvider output = (SineWaveProvider)value;
+				if (value is WaveProvider) {
+					WaveProvider output = (WaveProvider)value;
 					/*output.Playing = false;*/
 					output.BeginRelease();
 					activeMIDIKeys.Remove(midiNote);

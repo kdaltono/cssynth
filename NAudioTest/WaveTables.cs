@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NAudioTest.WaveProvider.Tables
+namespace NAudioTest.WaveProviders.Tables
 {
 	interface IWaveTable {
 		int SampleRate { get; set; }

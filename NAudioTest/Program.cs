@@ -1,6 +1,6 @@
 ﻿using NAudioTest.Engine;
 using NAudioTest.IO;
-using NAudioTest.WaveProvider.Tables;
+using NAudioTest.WaveProviders.Tables;
 using System;
 
 namespace NAudioTest

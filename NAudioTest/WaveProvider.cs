@@ -1,8 +1,8 @@
 ﻿using NAudio.Wave;
-using NAudioTest.WaveProvider.Tables;
+using NAudioTest.WaveProviders.Tables;
 using System;
 
-namespace NAudioTest.WaveProvider {
+namespace NAudioTest.WaveProviders {
 	enum SoundStage {
 		Attack, Decay, Sustain, Release
 	}
@@ -164,6 +164,35 @@ namespace NAudioTest.WaveProvider {
 				phase += indexIncrement;
 				if (phase >= (double)sw.GetWaveTableLength()) {
 					phase -= (double)sw.GetWaveTableLength();
+				}
+			}
+			return count;
+		}
+	}
+
+	class SawWaveProvider : WaveProvider, ISampleProvider {
+		public SawWaveProvider(float frequency, int sampleRate = 44100) : base(frequency, sampleRate) {
+		}
+
+		public int Read(float[] buffer, int offset, int count) {
+			if (!playing)
+				return 0;
+
+			SawWaveTable sw = SawWaveTable.Instance;
+
+			int waveTableLength = sw.GetWaveTableLength();
+			double frqTel = waveTableLength / sampleRate;
+			indexIncrement = frqTel * frequency;
+
+			for (int n = 0; n < count; ++n) {
+				UpdateVolume();
+				int index = (int)phase % waveTableLength;
+
+				buffer[n + offset] = sw.GetWaveSample(index) * Volume;
+
+				phase += indexIncrement;
+				if (phase >= (double)waveTableLength) {
+					phase -= (double)waveTableLength;
 				}
 			}
 			return count;
