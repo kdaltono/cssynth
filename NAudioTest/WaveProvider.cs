@@ -3,9 +3,7 @@ using NAudioTest.WaveProviders.Tables;
 using System;
 
 namespace NAudioTest.WaveProviders {
-	enum SoundStage {
-		Attack, Decay, Sustain, Release
-	}
+	// TODO: Fix the issue with double pressing a key breaking everything. Try recording the audio and see whats happening
 
 	class WaveProvider {
 		protected double phase, frequency, indexIncrement;
@@ -13,8 +11,13 @@ namespace NAudioTest.WaveProviders {
 		protected bool playing;
 
 		// Attack Decay Sustain Release:
-		protected SoundStage stage;
-		protected float attackInc, attackVol, decayInc, sustainVol, releaseInc;
+		protected float attackInc, attackVol, decayInc, sustainVol, sustainInc, releaseInc;
+
+		protected const int ATTACK = 0;
+		protected const int DECAY = 1;
+		protected const int SUSTAIN = 2;
+		protected const int RELEASE = 3;
+		protected int currentStage;
 
 		public WaveProvider(float frequency, int sampleRate = 44100) {
 			WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
@@ -27,11 +30,12 @@ namespace NAudioTest.WaveProviders {
 		}
 
 		public void BeginPlay() {
-			stage = SoundStage.Attack;
+			currentStage = ATTACK;
+			Playing = true;
 		}
 
 		public void BeginRelease() {
-			stage = SoundStage.Release;
+			currentStage = RELEASE;
 		}
 
 		public float Volume { get; set; }
@@ -66,7 +70,7 @@ namespace NAudioTest.WaveProviders {
 
 		public void SetAttackValues(float attackLength, float attackVolume) {
 			attackVol = attackVolume;
-			attackInc = (attackVol) / (attackLength * sampleRate);
+			attackInc = (attackVol - Volume) / (attackLength * sampleRate);
 		}
 
 		public void SetDecayValues(float decayLength) {
@@ -81,21 +85,22 @@ namespace NAudioTest.WaveProviders {
 		}
 
 		public void SetSustainValues(float sustainVolume) {
+			sustainInc = (Volume - sustainVol) / (0.01f / sampleRate);
 			sustainVol = sustainVolume;
 		}
 
 		public void UpdateVolume() {
-			switch (stage) {
-				case SoundStage.Attack:
+			switch (currentStage) {
+				case ATTACK:
 					UpdateAttackVolume();
 					break;
-				case SoundStage.Decay:
+				case DECAY:
 					UpdateDecayVolume();
 					break;
-				case SoundStage.Sustain:
+				case SUSTAIN:
 					UpdateSustainVolume();
 					break;
-				case SoundStage.Release:
+				case RELEASE:
 					UpdateReleaseVolume();
 					break;
 				default:
@@ -105,12 +110,13 @@ namespace NAudioTest.WaveProviders {
 
 		private void UpdateAttackVolume() {
 			if (attackInc == 0.0f) return;
-
+		
 			Volume += attackInc;
 			if ((attackInc > 0 && Volume > attackVol) ||
 				(attackInc < 0 && Volume < attackVol)) {
 				Volume = attackVol;
-				stage = SoundStage.Decay;
+				/*stage = SoundStage.Decay;*/
+				currentStage = DECAY;
 			}
 		}
 
@@ -121,20 +127,20 @@ namespace NAudioTest.WaveProviders {
 			if ((decayInc > 0 && Volume > sustainVol) ||
 				(decayInc < 0 && Volume < sustainVol)) {
 				Volume = sustainVol;
-				stage = SoundStage.Sustain;
+				/*stage = SoundStage.Sustain;*/
+				currentStage = SUSTAIN;
 			}
 		}
 
 		private void UpdateSustainVolume() {
 			if (Volume != sustainVol)
-				Volume = sustainVol;
+				Volume += sustainInc;
 		}
 
-		private void UpdateReleaseVolume() {
+		private void UpdateReleaseVolume() { 
 			if (releaseInc == 0.0f) return; // This shouldn't ever be the case, but if it is then do it.
-
 			Volume += releaseInc;
-			bool releaseComplete = releaseInc < 0 && Volume < 0.0f;
+			bool releaseComplete = releaseInc < 0 && Volume <= 0.0f;
 			if (releaseComplete) {
 				Volume = 0.0f;
 				playing = false;
@@ -180,11 +186,16 @@ namespace NAudioTest.WaveProviders {
 
 			SawWaveTable sw = SawWaveTable.Instance;
 
+			Console.WriteLine("Volume: " + Volume);
+			Console.WriteLine("Freq: " + frequency);
+			Console.WriteLine("Index Inc: " + indexIncrement);
+			Console.WriteLine("Stage: " + currentStage);
+
 			int waveTableLength = sw.GetWaveTableLength();
 			double frqTel = waveTableLength / sampleRate;
 			indexIncrement = frqTel * frequency;
 
-			for (int n = 0; n < count; ++n) {
+			for (int n = 0; n < count; n++) {
 				UpdateVolume();
 				int index = (int)phase % waveTableLength;
 

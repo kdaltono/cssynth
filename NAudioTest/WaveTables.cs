@@ -5,7 +5,6 @@ namespace NAudioTest.WaveProviders.Tables
 	interface IWaveTable {
 		int SampleRate { get; set; }
 		void GenerateWaveTable();
-
 		int GetWaveTableLength();
 		float GetWaveSample(int index);
 	}

@@ -10,10 +10,11 @@ namespace NAudioTest
 		static void Main(string[] args) {
 			SineWaveTable.Instance.GenerateWaveTable();
 			SawWaveTable.Instance.GenerateWaveTable();
+
 			MIDIHandler io = new MIDIHandler();
 
 			Console.WriteLine("To stop audio playback, type \'stop\'");
-			String input = Console.ReadLine();
+			string input = Console.ReadLine();
 			while (input != "stop") {
 				Console.WriteLine(String.Format("\'{0}\' is not a recognised command.", input));
 				input = Console.ReadLine();

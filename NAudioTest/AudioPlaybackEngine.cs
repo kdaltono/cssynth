@@ -26,7 +26,7 @@ namespace NAudioTest.Engine
 			mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channelCount));
 			mixer.ReadFully = true;
 
-			InitialiseActiveNotes(49);
+			InitialiseActiveNotes(128);
 
 			outputDevice.Init(mixer);
 			outputDevice.Play();
@@ -61,38 +61,19 @@ namespace NAudioTest.Engine
 
 		public void addActiveMIDIKey(int midiNote) {
 			int frequency = midiTools.GetFrequencyFromMIDINote(midiNote);
-			//SineWaveProvider output = new SineWaveProvider(frequency, sampleRate);
 
-
-			int inactiveKeyIndex = getInactiveNoteIndex();
-
-			if (inactiveKeyIndex == -1) {
-				Console.WriteLine("Can not add any more key inputs!");
-				return;
-			}
-
-			SawWaveProvider output = activeNotes[inactiveKeyIndex];
+			SawWaveProvider output = activeNotes[midiNote];
+			output.SetRampValues(0.01f, 0.25f, 0.4f, 0.2f, 0.2f);
 			output.Frequency = frequency;
 			output.Volume = 0.0f;
-			output.Playing = true; // Need to get rid of this feature
-			output.SetRampValues(0.2f, 0.25f, 0.4f, 0.2f, 0.2f);
-			output.BeginPlay();
 
-			activeMIDIKeys.Add(midiNote, output);
+			output.BeginPlay();
 
 			PlaySound(output);
 		}
 
 		public void removeActiveMIDIKey(int midiNote) {
-			ISampleProvider value;
-			if (activeMIDIKeys.TryGetValue(midiNote, out value)) {
-				if (value is WaveProvider) {
-					WaveProvider output = (WaveProvider)value;
-					/*output.Playing = false;*/
-					output.BeginRelease();
-					activeMIDIKeys.Remove(midiNote);
-				}
-			}
+			activeNotes[midiNote].BeginRelease();
 		}
 
 		public void PlaySound(ISampleProvider input) {
