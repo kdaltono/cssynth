@@ -138,7 +138,8 @@ namespace NAudioTest.WaveProviders {
 		}
 
 		private void UpdateReleaseVolume() { 
-			if (releaseInc == 0.0f) return; // This shouldn't ever be the case, but if it is then do it.
+			if (releaseInc == 0.0f) return;
+
 			Volume += releaseInc;
 			bool releaseComplete = releaseInc < 0 && Volume <= 0.0f;
 			if (releaseComplete) {
@@ -181,23 +182,23 @@ namespace NAudioTest.WaveProviders {
 		}
 
 		public int Read(float[] buffer, int offset, int count) {
-			if (!playing)
+			if (!playing) {
 				return 0;
+			}
 
 			SawWaveTable sw = SawWaveTable.Instance;
-
-			Console.WriteLine("Volume: " + Volume);
-			Console.WriteLine("Freq: " + frequency);
-			Console.WriteLine("Index Inc: " + indexIncrement);
-			Console.WriteLine("Stage: " + currentStage);
 
 			int waveTableLength = sw.GetWaveTableLength();
 			double frqTel = waveTableLength / sampleRate;
 			indexIncrement = frqTel * frequency;
+			int index;
 
 			for (int n = 0; n < count; n++) {
 				UpdateVolume();
-				int index = (int)phase % waveTableLength;
+				index = (int)phase % waveTableLength;
+
+				// I think the issue is most likely to dowith the state hanling stuff. Need to 
+				// check how the logic works with changing to attack when it is still in release.
 
 				buffer[n + offset] = sw.GetWaveSample(index) * Volume;
 

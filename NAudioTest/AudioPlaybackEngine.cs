@@ -11,6 +11,8 @@ namespace NAudioTest.Engine
 	{
 		private readonly IWavePlayer outputDevice;
 		private readonly MixingSampleProvider mixer;
+		private readonly SavingSampleProvider saver;
+
 		private Dictionary<int, ISampleProvider> activeMIDIKeys;
 		private MIDITools midiTools;
 		private int sampleRate;
@@ -25,10 +27,11 @@ namespace NAudioTest.Engine
 			outputDevice = new WasapiOut();
 			mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channelCount));
 			mixer.ReadFully = true;
+			saver = new SavingSampleProvider(mixer, "test.wav");
 
 			InitialiseActiveNotes(128);
 
-			outputDevice.Init(mixer);
+			outputDevice.Init(saver);
 			outputDevice.Play();
 		}
 
@@ -62,6 +65,7 @@ namespace NAudioTest.Engine
 		public void addActiveMIDIKey(int midiNote) {
 			int frequency = midiTools.GetFrequencyFromMIDINote(midiNote);
 
+			Console.WriteLine("Active note index: " + midiNote);
 			SawWaveProvider output = activeNotes[midiNote];
 			output.SetRampValues(0.01f, 0.25f, 0.4f, 0.2f, 0.2f);
 			output.Frequency = frequency;
@@ -96,6 +100,7 @@ namespace NAudioTest.Engine
 
 		public void Dispose() {
 			outputDevice.Dispose();
+			saver.Dispose();
 		}
 
 		public static readonly AudioPlaybackEngine Instance = new AudioPlaybackEngine(44100, 2);
