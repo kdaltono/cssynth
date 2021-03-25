@@ -19,7 +19,6 @@ namespace NAudioTest {
 		public WaveFormat WaveFormat { get { return sourceSampleProvider.WaveFormat; } }
 
 		public int Read(float[] buffer, int offset, int count) {
-			// This isn't working.
 			var read = sourceSampleProvider.Read(buffer, offset, count);
 			if (count > 0 && !isWriterDisposed) {
 				writer.WriteSamples(buffer, offset, count);

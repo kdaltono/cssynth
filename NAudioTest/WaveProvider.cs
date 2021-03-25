@@ -112,10 +112,8 @@ namespace NAudioTest.WaveProviders {
 			if (attackInc == 0.0f) return;
 		
 			Volume += attackInc;
-			if ((attackInc > 0 && Volume > attackVol) ||
-				(attackInc < 0 && Volume < attackVol)) {
+			if (attackInc > 0 && Volume > attackVol) {
 				Volume = attackVol;
-				/*stage = SoundStage.Decay;*/
 				currentStage = DECAY;
 			}
 		}
@@ -127,14 +125,18 @@ namespace NAudioTest.WaveProviders {
 			if ((decayInc > 0 && Volume > sustainVol) ||
 				(decayInc < 0 && Volume < sustainVol)) {
 				Volume = sustainVol;
-				/*stage = SoundStage.Sustain;*/
 				currentStage = SUSTAIN;
 			}
 		}
 
 		private void UpdateSustainVolume() {
-			if (Volume != sustainVol)
-				Volume += sustainInc;
+			if (sustainInc == 0.0f) return;
+
+			Volume += sustainInc;
+
+			if ((sustainInc < 0 && Volume < sustainVol) || (sustainInc > 0 && Volume > sustainVol)) {
+				Volume = sustainVol;
+			}
 		}
 
 		private void UpdateReleaseVolume() { 

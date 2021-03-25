@@ -71,9 +71,13 @@ namespace NAudioTest.Engine
 			output.Frequency = frequency;
 			output.Volume = 0.0f;
 
-			output.BeginPlay();
-
-			PlaySound(output);
+			// This is needed to stop the audio sample being added multiple times whilst audio is still playing.
+			if (output.Playing) {
+				output.BeginPlay();
+			} else {
+				output.BeginPlay();
+				PlaySound(output);
+			}
 		}
 
 		public void removeActiveMIDIKey(int midiNote) {
