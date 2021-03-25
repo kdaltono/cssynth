@@ -1,12 +1,23 @@
 ﻿using NAudio.Wave;
 using NAudioTest.WaveProviders.Tables;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace NAudioTest.WaveProviders {
-	class WaveProvider {
-		protected double phase, frequency, indexIncrement;
+
+	// TODO: Test this.
+
+	class NoteProvider : ISampleProvider {
+		protected double frequency;
 		protected int sampleRate;
 		protected bool playing;
+
+		private bool playSin, playSaw;
+		private float sinVolume, sawVolume;
+		private double sinPhase, sawPhase;
 
 		// Attack Decay Sustain Release:
 		protected float attackInc, attackVol, decayInc, sustainVol, sustainInc, releaseInc;
@@ -17,10 +28,12 @@ namespace NAudioTest.WaveProviders {
 		protected const int RELEASE = 3;
 		protected int currentStage;
 
-		public WaveProvider(float frequency, int sampleRate = 44100) {
+		public NoteProvider(float frequency, int sampleRate = 44100) {
 			WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
 
-			this.phase = 0;
+			this.sawPhase = 0;
+			this.sinPhase = 0;
+
 			this.frequency = frequency;
 			this.sampleRate = sampleRate;
 			this.playing = false;
@@ -37,6 +50,28 @@ namespace NAudioTest.WaveProviders {
 		}
 
 		public float Volume { get; set; }
+
+		public float SinVolume { 
+			get {
+				return sinVolume;
+			}
+			set {
+				sinVolume = value;
+				if (sinVolume == 0.0f) playSin = false;
+				else if (sinVolume > 0.0f) playSin = true;
+			}
+		}
+
+		public float SawVolume {
+			get {
+				return sawVolume;
+			}
+			set {
+				sawVolume = value;
+				if (sawVolume == 0.0f) playSaw = false;
+				else if (sawVolume > 0.0f) playSaw = true;
+			}
+		}
 
 		public double Frequency {
 			get {
@@ -57,6 +92,45 @@ namespace NAudioTest.WaveProviders {
 		}
 
 		public WaveFormat WaveFormat { get; set; }
+
+		public int Read(float[] buffer, int offset, int count) {
+			if (!playing)
+				return 0;
+
+			SineWaveTable sin = SineWaveTable.Instance;
+
+			double sinFrqTel = sin.GetWaveTableLength() / sampleRate;
+
+			double sinIndexInc = sinFrqTel * frequency;
+
+			for (int n = 0; n < count; ++n) {
+				UpdateVolume();
+
+				buffer[n + offset] = GetSinWaveTableValue(sinIndexInc);
+			}
+			return count;
+		}
+
+		private float GetBufferValue(double sinIndexInc) {
+			float returnValue = 0.0f;
+			if (playSin) {
+				returnValue += GetSinWaveTableValue(sinIndexInc);
+			}
+
+			return returnValue;
+		}
+
+		private float GetSinWaveTableValue(double sinIndexInc) {
+			SineWaveTable sin = SineWaveTable.Instance;
+
+			int sinIndex = (int)sinPhase % sin.GetWaveTableLength();
+
+			sinPhase += sinIndexInc;
+			if (sinPhase >= (double)sin.GetWaveTableLength()) {
+				sinPhase -= (double)sin.GetWaveTableLength();
+			}
+			return sin.GetWaveSample(sinIndex) * Volume;
+		}
 
 		public void SetRampValues(float attackLength, float attackVolume, float decayLength, float sustainVolume,
 			float releaseLength) {
@@ -108,7 +182,7 @@ namespace NAudioTest.WaveProviders {
 
 		private void UpdateAttackVolume() {
 			if (attackInc == 0.0f) return;
-		
+
 			Volume += attackInc;
 			if (attackInc > 0 && Volume > attackVol) {
 				Volume = attackVol;
@@ -137,7 +211,7 @@ namespace NAudioTest.WaveProviders {
 			}
 		}
 
-		private void UpdateReleaseVolume() { 
+		private void UpdateReleaseVolume() {
 			if (releaseInc == 0.0f) return;
 
 			Volume += releaseInc;
@@ -146,65 +220,6 @@ namespace NAudioTest.WaveProviders {
 				Volume = 0.0f;
 				playing = false;
 			}
-		}
-	}
-
-	class SineWaveProvider : WaveProvider, ISampleProvider {
-		public SineWaveProvider(float frequency, int sampleRate = 44100) : base(frequency, sampleRate) {
-		}
-
-		public int Read(float[] buffer, int offset, int count) {
-			if (!playing)
-				return 0;
-
-			SineWaveTable sw = SineWaveTable.Instance;
-
-			double frqTel = sw.GetWaveTableLength() / sampleRate;
-			indexIncrement = frqTel * frequency;
-
-			for (int n = 0; n < count; ++n) {
-				UpdateVolume();
-				int index = (int)phase % sw.GetWaveTableLength();
-
-				buffer[n + offset] = sw.GetWaveSample(index) * Volume;
-
-				phase += indexIncrement;
-				if (phase >= (double)sw.GetWaveTableLength()) {
-					phase -= (double)sw.GetWaveTableLength();
-				}
-			}
-			return count;
-		}
-	}
-
-	class SawWaveProvider : WaveProvider, ISampleProvider {
-		public SawWaveProvider(float frequency, int sampleRate = 44100) : base(frequency, sampleRate) {
-		}
-
-		public int Read(float[] buffer, int offset, int count) {
-			if (!playing) {
-				return 0;
-			}
-
-			SawWaveTable sw = SawWaveTable.Instance;
-
-			int waveTableLength = sw.GetWaveTableLength();
-			double frqTel = waveTableLength / sampleRate;
-			indexIncrement = frqTel * frequency;
-			int index;
-
-			for (int n = 0; n < count; n++) {
-				UpdateVolume();
-				index = (int)phase % waveTableLength;
-
-				buffer[n + offset] = sw.GetWaveSample(index) * Volume;
-
-				phase += indexIncrement;
-				if (phase >= (double)waveTableLength) {
-					phase -= (double)waveTableLength;
-				}
-			}
-			return count;
 		}
 	}
 }
