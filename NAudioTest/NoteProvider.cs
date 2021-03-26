@@ -1,32 +1,26 @@
 ﻿using NAudio.Wave;
 using NAudioTest.WaveProviders.Tables;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NAudioTest.WaveProviders {
 
-	// TODO: Test this.
-
 	class NoteProvider : ISampleProvider {
-		protected double frequency;
-		protected int sampleRate;
-		protected bool playing;
+		private double frequency;
+		private int sampleRate;
+		private bool playing;
 
 		private bool playSin, playSaw;
 		private float sinVolume, sawVolume;
 		private double sinPhase, sawPhase;
 
 		// Attack Decay Sustain Release:
-		protected float attackInc, attackVol, decayInc, sustainVol, sustainInc, releaseInc;
+		private float attackInc, attackVol, decayInc, sustainVol, sustainInc, releaseInc;
 
-		protected const int ATTACK = 0;
-		protected const int DECAY = 1;
-		protected const int SUSTAIN = 2;
-		protected const int RELEASE = 3;
-		protected int currentStage;
+		private const int ATTACK = 0;
+		private const int DECAY = 1;
+		private const int SUSTAIN = 2;
+		private const int RELEASE = 3;
+		private int currentStage;
 
 		public NoteProvider(float frequency, int sampleRate = 44100) {
 			WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
@@ -97,26 +91,28 @@ namespace NAudioTest.WaveProviders {
 			if (!playing)
 				return 0;
 
-			SineWaveTable sin = SineWaveTable.Instance;
+			double sawFrqTel = SawWaveTable.Instance.GetWaveTableLength() / sampleRate;
+			double sawIndexInc = sawFrqTel * frequency;
 
-			double sinFrqTel = sin.GetWaveTableLength() / sampleRate;
-
+			double sinFrqTel = SineWaveTable.Instance.GetWaveTableLength() / sampleRate;
 			double sinIndexInc = sinFrqTel * frequency;
 
 			for (int n = 0; n < count; ++n) {
 				UpdateVolume();
 
-				buffer[n + offset] = GetSinWaveTableValue(sinIndexInc);
+				buffer[n + offset] = GetBufferValue(sinIndexInc, sawIndexInc) * Volume;
 			}
 			return count;
 		}
 
-		private float GetBufferValue(double sinIndexInc) {
+		private float GetBufferValue(double sinIndexInc, double sawIndexInc) {
 			float returnValue = 0.0f;
 			if (playSin) {
 				returnValue += GetSinWaveTableValue(sinIndexInc);
 			}
-
+			if (playSaw) {
+				returnValue += GetSawWaveTableValue(sawIndexInc);
+			}
 			return returnValue;
 		}
 
@@ -129,7 +125,19 @@ namespace NAudioTest.WaveProviders {
 			if (sinPhase >= (double)sin.GetWaveTableLength()) {
 				sinPhase -= (double)sin.GetWaveTableLength();
 			}
-			return sin.GetWaveSample(sinIndex) * Volume;
+			return sin.GetWaveSample(sinIndex) * sinVolume;
+		}
+
+		private float GetSawWaveTableValue(double sawIndexInc) {
+			SawWaveTable saw = SawWaveTable.Instance;
+
+			int sawIndex = (int)sawPhase % saw.GetWaveTableLength();
+
+			sawPhase += sawIndexInc;
+			if (sawPhase >= (double)saw.GetWaveTableLength()) {
+				sawPhase -= (double)saw.GetWaveTableLength();
+			}
+			return saw.GetWaveSample(sawIndex) * sawVolume;
 		}
 
 		public void SetRampValues(float attackLength, float attackVolume, float decayLength, float sustainVolume,

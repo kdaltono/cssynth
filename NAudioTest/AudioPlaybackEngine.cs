@@ -13,17 +13,15 @@ namespace NAudioTest.Engine
 		private readonly MixingSampleProvider mixer;
 		private readonly SavingSampleProvider saver;
 
-		private Dictionary<int, ISampleProvider> activeMIDIKeys;
 		private MIDITools midiTools;
 		private int sampleRate;
 
-		private SawWaveProvider[] activeNotes;
+		private NoteProvider[] activeNotes;
 
 		public AudioPlaybackEngine(int sampleRate = 44100, int channelCount = 2) {
 			this.sampleRate = sampleRate;
 			midiTools = new MIDITools();
 
-			activeMIDIKeys = new Dictionary<int, ISampleProvider>();
 			outputDevice = new WasapiOut();
 			mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channelCount));
 			mixer.ReadFully = true;
@@ -36,10 +34,10 @@ namespace NAudioTest.Engine
 		}
 
 		private void InitialiseActiveNotes(int activeNoteSize) {
-			activeNotes = new SawWaveProvider[activeNoteSize];
+			activeNotes = new NoteProvider[activeNoteSize];
 
 			for (int i = 0; i < activeNoteSize; i++) {
-				activeNotes[i] = new SawWaveProvider(440) {
+				activeNotes[i] = new NoteProvider(440) {
 					Volume = 0.0f
 				};
 
@@ -47,29 +45,16 @@ namespace NAudioTest.Engine
 			}
 		}
 
-		private int getInactiveNoteIndex() {
-			bool found = false;
-			int index = 0;
-			while (!found) {
-				if (index >= 10)
-					break;
-
-				if (!activeNotes[index].Playing)
-					return index;
-				else
-					index++;
-			}
-			return -1;
-		}
-
 		public void addActiveMIDIKey(int midiNote) {
 			int frequency = midiTools.GetFrequencyFromMIDINote(midiNote);
 
 			Console.WriteLine("Active note index: " + midiNote);
-			SawWaveProvider output = activeNotes[midiNote];
+			NoteProvider output = activeNotes[midiNote];
 			output.SetRampValues(0.01f, 0.25f, 0.4f, 0.2f, 0.2f);
 			output.Frequency = frequency;
 			output.Volume = 0.0f;
+			output.SinVolume = 1.0f;
+			output.SawVolume = 0.1f;
 
 			// This is needed to stop the audio sample being added multiple times whilst audio is still playing.
 			if (output.Playing) {
