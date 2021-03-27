@@ -12,6 +12,7 @@ namespace NAudioTest.WaveProviders {
 		private bool playSin, playSaw;
 		private float sinVolume, sawVolume;
 		private double sinPhase, sawPhase;
+		private double sinIndexInc, sawIndexInc;
 
 		// Attack Decay Sustain Release:
 		private float attackInc, attackVol, decayInc, sustainVol, sustainInc, releaseInc;
@@ -73,6 +74,8 @@ namespace NAudioTest.WaveProviders {
 			}
 			set {
 				frequency = value;
+				sinIndexInc = (SineWaveTable.Instance.GetWaveTableLength() / sampleRate) * frequency;
+				sawIndexInc = (SawWaveTable.Instance.GetWaveTableLength() / sampleRate) * frequency;
 			}
 		}
 
@@ -88,14 +91,10 @@ namespace NAudioTest.WaveProviders {
 		public WaveFormat WaveFormat { get; set; }
 
 		public int Read(float[] buffer, int offset, int count) {
+			Oscillate();
+
 			if (!playing)
 				return 0;
-
-			double sawFrqTel = SawWaveTable.Instance.GetWaveTableLength() / sampleRate;
-			double sawIndexInc = sawFrqTel * frequency;
-
-			double sinFrqTel = SineWaveTable.Instance.GetWaveTableLength() / sampleRate;
-			double sinIndexInc = sinFrqTel * frequency;
 
 			for (int n = 0; n < count; ++n) {
 				UpdateVolume();
@@ -103,6 +102,11 @@ namespace NAudioTest.WaveProviders {
 				buffer[n + offset] = GetBufferValue(sinIndexInc, sawIndexInc) * Volume;
 			}
 			return count;
+		}
+
+		private void Oscillate() {
+			sinPhase += sinIndexInc;
+			sawPhase += sawIndexInc;
 		}
 
 		private float GetBufferValue(double sinIndexInc, double sawIndexInc) {
