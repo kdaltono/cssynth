@@ -9,7 +9,7 @@ namespace NAudioTest.Engine
 {
 	class AudioPlaybackEngine : IDisposable
 	{
-		private readonly IWavePlayer outputDevice;
+		private readonly WasapiOut outputDevice;
 		private readonly MixingSampleProvider mixer;
 		private readonly SavingSampleProvider saver;
 
@@ -29,6 +29,8 @@ namespace NAudioTest.Engine
 
 			InitialiseActiveNotes(128);
 
+			/*outputDevice.DesiredLatency = 50;
+			outputDevice.NumberOfBuffers = 3;*/
 			outputDevice.Init(saver);
 			outputDevice.Play();
 		}
@@ -37,25 +39,18 @@ namespace NAudioTest.Engine
 			activeNotes = new NoteProvider[activeNoteSize];
 
 			for (int i = 0; i < activeNoteSize; i++) {
-				activeNotes[i] = new NoteProvider(440) {
+				activeNotes[i] = new NoteProvider(midiTools.GetFrequencyFromMIDINote(i)) {
 					Volume = 0.0f,
 					SinVolume = 1.0f,
-					SawVolume = 0.1f
+					SawVolume = 0.0f
 				};
-				activeNotes[i].SetRampValues(0.01f, 0.25f, 0.4f, 0.2f, 0.2f);
-
-				mixer.AddMixerInput(activeNotes[i]);
+				activeNotes[i].SetRampValues(0.1f, 0.25f, 0.2f, 0.2f, 0.2f);
 			}
 		}
 
 		public void addActiveMIDIKey(int midiNote) {
-			float frequency = midiTools.GetFrequencyFromMIDINote(midiNote);
-
-			Console.WriteLine("Active note index: " + midiNote);
 			NoteProvider output = activeNotes[midiNote];
-			output.Frequency = frequency;
 
-			// This is needed to stop the audio sample being added multiple times whilst audio is still playing.
 			if (output.Playing) {
 				output.BeginPlay();
 			} else {

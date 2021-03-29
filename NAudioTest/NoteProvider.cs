@@ -1,4 +1,5 @@
 ﻿using NAudio.Wave;
+using NAudioTest.Engine;
 using NAudioTest.WaveProviders.Tables;
 using System;
 
@@ -11,8 +12,12 @@ namespace NAudioTest.WaveProviders {
 
 		private bool playSin, playSaw;
 		private float sinVolume, sawVolume;
-		private double sinPhase, sawPhase;
-		private double sinIndexInc, sawIndexInc;
+		/*private double sinPhase, sawPhase;
+		private double sinIndexInc, sawIndexInc;*/
+
+		private double prevPhase;
+		private double phase;
+		private double phaseInc;
 
 		// Attack Decay Sustain Release:
 		private float attackInc, attackVol, decayInc, sustainVol, sustainInc, releaseInc;
@@ -26,10 +31,11 @@ namespace NAudioTest.WaveProviders {
 		public NoteProvider(float frequency, int sampleRate = 44100) {
 			WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
 
-			this.sawPhase = 0;
-			this.sinPhase = 0;
+			prevPhase = 0.0;
+			phase = 0.0;
+			phaseInc = 0.0;
 
-			this.frequency = frequency;
+			Frequency = frequency;
 			this.sampleRate = sampleRate;
 			this.playing = false;
 			Volume = 0.2f;
@@ -74,8 +80,7 @@ namespace NAudioTest.WaveProviders {
 			}
 			set {
 				frequency = value;
-				sinIndexInc = (SineWaveTable.Instance.GetWaveTableLength() / sampleRate) * frequency;
-				sawIndexInc = (SawWaveTable.Instance.GetWaveTableLength() / sampleRate) * frequency;
+				phaseInc = value;
 			}
 		}
 
@@ -83,7 +88,7 @@ namespace NAudioTest.WaveProviders {
 			get {
 				return playing;
 			}
-			set {
+			set { 
 				playing = value;
 			}
 		}
@@ -91,57 +96,52 @@ namespace NAudioTest.WaveProviders {
 		public WaveFormat WaveFormat { get; set; }
 
 		public int Read(float[] buffer, int offset, int count) {
-			Oscillate();
-
-			if (!playing)
+			if (!playing) {
+				Oscillate(count);
 				return 0;
-
-			for (int n = 0; n < count; ++n) {
-				UpdateVolume();
-
-				buffer[n + offset] = GetBufferValue(sinIndexInc, sawIndexInc) * Volume;
 			}
+
+			for (int n = 0; n < count; n++) {
+				Oscillate();
+
+				buffer[n + offset] = GetBufferValue() * Volume;
+				UpdateVolume();
+			}
+
 			return count;
 		}
 
-		private void Oscillate() {
-			sinPhase += sinIndexInc;
-			sawPhase += sawIndexInc;
+		private void Oscillate(int count) {
+			prevPhase = phase;
+			phase += (phaseInc * count);
+
+			phase %= sampleRate;
 		}
 
-		private float GetBufferValue(double sinIndexInc, double sawIndexInc) {
+		private void Oscillate() {
+			prevPhase = phase;
+			phase += phaseInc;
+
+			phase %= sampleRate;
+		}
+
+		private float GetBufferValue() {
 			float returnValue = 0.0f;
 			if (playSin) {
-				returnValue += GetSinWaveTableValue(sinIndexInc);
+				returnValue += GetSinWaveTableValue();
 			}
 			if (playSaw) {
-				returnValue += GetSawWaveTableValue(sawIndexInc);
+				returnValue += GetSawWaveTableValue();
 			}
 			return returnValue;
 		}
 
-		private float GetSinWaveTableValue(double sinIndexInc) {
-			SineWaveTable sin = SineWaveTable.Instance;
-
-			int sinIndex = (int)sinPhase % sin.GetWaveTableLength();
-
-			sinPhase += sinIndexInc;
-			if (sinPhase >= (double)sin.GetWaveTableLength()) {
-				sinPhase -= (double)sin.GetWaveTableLength();
-			}
-			return sin.GetWaveSample(sinIndex) * sinVolume;
+		private float GetSinWaveTableValue() {
+			return SineWaveTable.Instance.GetWaveSample((int)phase) * sinVolume;
 		}
 
-		private float GetSawWaveTableValue(double sawIndexInc) {
-			SawWaveTable saw = SawWaveTable.Instance;
-
-			int sawIndex = (int)sawPhase % saw.GetWaveTableLength();
-
-			sawPhase += sawIndexInc;
-			if (sawPhase >= (double)saw.GetWaveTableLength()) {
-				sawPhase -= (double)saw.GetWaveTableLength();
-			}
-			return saw.GetWaveSample(sawIndex) * sawVolume;
+		private float GetSawWaveTableValue() {
+			return SawWaveTable.Instance.GetWaveSample((int)phase) * sawVolume;
 		}
 
 		public void SetRampValues(float attackLength, float attackVolume, float decayLength, float sustainVolume,
@@ -169,6 +169,7 @@ namespace NAudioTest.WaveProviders {
 		}
 
 		public void SetSustainValues(float sustainVolume) {
+			// Maybe here?
 			sustainInc = (Volume - sustainVol) / (0.01f / sampleRate);
 			sustainVol = sustainVolume;
 		}
