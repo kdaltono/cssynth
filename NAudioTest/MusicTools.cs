@@ -5,28 +5,28 @@ namespace NAudioTest.Midi
 {
 	class MIDITools
 	{
-		private int[] midiFrequencyArray;
+		private readonly float[] midiFrequencyArray;
 
 		public MIDITools() {
-			midiFrequencyArray = new int[128];
+			midiFrequencyArray = new float[128];
 			GenerateFrequencies();
 		}
 
 		private void GenerateFrequencies() {
 			for (int midiNote = 0; midiNote < 128; midiNote++) {
-				int currFreq = ConvertMIDINoteToFrequency(midiNote);
+				float currFreq = ConvertMIDINoteToFrequency(midiNote);
 				midiFrequencyArray[midiNote] = currFreq;
 			}
 		}
 
-		private int ConvertMIDINoteToFrequency(int midiNote) {
+		private float ConvertMIDINoteToFrequency(int midiNote) {
 			if (midiNote == 69) 
 				return 440;
 			else
-				return (int)(Math.Pow(2.0, (midiNote - 69.0) / 12.0) * 440.0);
+				return (float)(Math.Pow(2.0, (midiNote - 69.0) / 12.0) * 440.0);
 		}
 
-		public int GetFrequencyFromMIDINote(int midiNote) {
+		public float GetFrequencyFromMIDINote(int midiNote) {
 			if (midiNote < 0 || midiNote > 127)
 				throw new ArgumentOutOfRangeException("Midi note cannot be less than 0 or larger than 127.");
 

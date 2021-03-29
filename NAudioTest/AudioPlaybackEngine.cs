@@ -38,23 +38,22 @@ namespace NAudioTest.Engine
 
 			for (int i = 0; i < activeNoteSize; i++) {
 				activeNotes[i] = new NoteProvider(440) {
-					Volume = 0.0f
+					Volume = 0.0f,
+					SinVolume = 1.0f,
+					SawVolume = 0.1f
 				};
+				activeNotes[i].SetRampValues(0.01f, 0.25f, 0.4f, 0.2f, 0.2f);
 
 				mixer.AddMixerInput(activeNotes[i]);
 			}
 		}
 
 		public void addActiveMIDIKey(int midiNote) {
-			int frequency = midiTools.GetFrequencyFromMIDINote(midiNote);
+			float frequency = midiTools.GetFrequencyFromMIDINote(midiNote);
 
 			Console.WriteLine("Active note index: " + midiNote);
 			NoteProvider output = activeNotes[midiNote];
-			output.SetRampValues(0.01f, 0.25f, 0.4f, 0.2f, 0.2f);
 			output.Frequency = frequency;
-			output.Volume = 0.0f;
-			output.SinVolume = 1.0f;
-			output.SawVolume = 0.1f;
 
 			// This is needed to stop the audio sample being added multiple times whilst audio is still playing.
 			if (output.Playing) {
