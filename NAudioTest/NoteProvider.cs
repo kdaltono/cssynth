@@ -2,6 +2,7 @@
 using NAudioTest.Engine;
 using NAudioTest.WaveProviders.Tables;
 using System;
+using System.Diagnostics;
 
 namespace NAudioTest.WaveProviders {
 
@@ -9,13 +10,11 @@ namespace NAudioTest.WaveProviders {
 		private double frequency;
 		private int sampleRate;
 		private bool playing;
+		private bool firstRead;
 
 		private bool playSin, playSaw;
 		private float sinVolume, sawVolume;
-		/*private double sinPhase, sawPhase;
-		private double sinIndexInc, sawIndexInc;*/
 
-		private double prevPhase;
 		private double phase;
 		private double phaseInc;
 
@@ -28,17 +27,22 @@ namespace NAudioTest.WaveProviders {
 		private const int RELEASE = 3;
 		private int currentStage;
 
+		Stopwatch timer;
+
 		public NoteProvider(float frequency, int sampleRate = 44100) {
 			WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
 
-			prevPhase = 0.0;
+			timer = new Stopwatch();
+			timer.Start();
+
 			phase = 0.0;
 			phaseInc = 0.0;
 
 			Frequency = frequency;
 			this.sampleRate = sampleRate;
 			this.playing = false;
-			Volume = 0.2f;
+			this.firstRead = true;
+			Volume = 0.0f;
 		}
 
 		public void BeginPlay() {
@@ -96,8 +100,13 @@ namespace NAudioTest.WaveProviders {
 		public WaveFormat WaveFormat { get; set; }
 
 		public int Read(float[] buffer, int offset, int count) {
+			// FOUND THE ISSUE! THIS READ METHOD IS GETTING CALLED TWICE AS MUCH ON THOSE 'SOMETIMES' CASES:
+			/*timer.Stop();
+			Console.WriteLine("Avg time: {0}", timer.Elapsed.TotalMilliseconds);
+			timer.Reset();
+			timer.Start();*/
+
 			if (!playing) {
-				Oscillate(count);
 				return 0;
 			}
 
@@ -105,24 +114,21 @@ namespace NAudioTest.WaveProviders {
 				Oscillate();
 
 				buffer[n + offset] = GetBufferValue() * Volume;
+
+				if (!playing) {
+					return count - n;
+				}
+
 				UpdateVolume();
 			}
 
 			return count;
 		}
 
-		private void Oscillate(int count) {
-			prevPhase = phase;
-			phase += (phaseInc * count);
-
-			phase %= sampleRate;
-		}
-
 		private void Oscillate() {
-			prevPhase = phase;
 			phase += phaseInc;
-
-			phase %= sampleRate;
+			if (phase >= sampleRate)
+				phase -= sampleRate;
 		}
 
 		private float GetBufferValue() {

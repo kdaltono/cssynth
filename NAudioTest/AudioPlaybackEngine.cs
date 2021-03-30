@@ -9,7 +9,7 @@ namespace NAudioTest.Engine
 {
 	class AudioPlaybackEngine : IDisposable
 	{
-		private readonly WasapiOut outputDevice;
+		private readonly DirectSoundOut outputDevice;
 		private readonly MixingSampleProvider mixer;
 		private readonly SavingSampleProvider saver;
 
@@ -22,15 +22,14 @@ namespace NAudioTest.Engine
 			this.sampleRate = sampleRate;
 			midiTools = new MIDITools();
 
-			outputDevice = new WasapiOut();
+			outputDevice = new DirectSoundOut();
 			mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channelCount));
 			mixer.ReadFully = true;
 			saver = new SavingSampleProvider(mixer, "test.wav");
 
+
 			InitialiseActiveNotes(128);
 
-			/*outputDevice.DesiredLatency = 50;
-			outputDevice.NumberOfBuffers = 3;*/
 			outputDevice.Init(saver);
 			outputDevice.Play();
 		}
@@ -40,7 +39,6 @@ namespace NAudioTest.Engine
 
 			for (int i = 0; i < activeNoteSize; i++) {
 				activeNotes[i] = new NoteProvider(midiTools.GetFrequencyFromMIDINote(i)) {
-					Volume = 0.0f,
 					SinVolume = 1.0f,
 					SawVolume = 0.0f
 				};
@@ -54,8 +52,8 @@ namespace NAudioTest.Engine
 			if (output.Playing) {
 				output.BeginPlay();
 			} else {
+				AddMixerInput(output);
 				output.BeginPlay();
-				PlaySound(output);
 			}
 		}
 
