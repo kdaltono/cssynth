@@ -10,7 +10,6 @@ namespace NAudioTest.WaveProviders {
 		private double frequency;
 		private int sampleRate;
 		private bool playing;
-		private bool firstRead;
 
 		private bool playSin, playSaw;
 		private float sinVolume, sawVolume;
@@ -41,7 +40,7 @@ namespace NAudioTest.WaveProviders {
 			Frequency = frequency;
 			this.sampleRate = sampleRate;
 			this.playing = false;
-			this.firstRead = true;
+			
 			Volume = 0.0f;
 		}
 
@@ -100,28 +99,19 @@ namespace NAudioTest.WaveProviders {
 		public WaveFormat WaveFormat { get; set; }
 
 		public int Read(float[] buffer, int offset, int count) {
-			// FOUND THE ISSUE! THIS READ METHOD IS GETTING CALLED TWICE AS MUCH ON THOSE 'SOMETIMES' CASES:
-			/*timer.Stop();
-			Console.WriteLine("Avg time: {0}", timer.Elapsed.TotalMilliseconds);
-			timer.Reset();
-			timer.Start();*/
 
-			if (!playing) {
-				return 0;
-			}
+			// Need to find a graceful way for this to finally return 0 when the audio is definintely finished. The
+			// 'playing' variable doesn't work properly, and this method keeps the read open for more reads. When
+			// lots of notes are played, this creates buffering issues with AudioPlaybackEngine trying to read from
+			// multiple NoteProviders at the same time. Returning 0 here would remove them and not cause this issue.
 
 			for (int n = 0; n < count; n++) {
 				Oscillate();
 
 				buffer[n + offset] = GetBufferValue() * Volume;
 
-				if (!playing) {
-					return count - n;
-				}
-
 				UpdateVolume();
 			}
-
 			return count;
 		}
 
@@ -175,7 +165,6 @@ namespace NAudioTest.WaveProviders {
 		}
 
 		public void SetSustainValues(float sustainVolume) {
-			// Maybe here?
 			sustainInc = (Volume - sustainVol) / (0.01f / sampleRate);
 			sustainVol = sustainVolume;
 		}

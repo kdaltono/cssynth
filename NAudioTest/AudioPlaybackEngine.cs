@@ -42,7 +42,7 @@ namespace NAudioTest.Engine
 					SinVolume = 1.0f,
 					SawVolume = 0.0f
 				};
-				activeNotes[i].SetRampValues(0.1f, 0.25f, 0.2f, 0.2f, 0.2f);
+				activeNotes[i].SetRampValues(0.15f, 0.2f, 0.2f, 0.18f, 0.2f);
 			}
 		}
 
