@@ -11,7 +11,7 @@ namespace NAudioTest.WaveProviders.Tables
 
 	class SineWaveTable : IWaveTable
 	{
-		private float[] waveTable;
+		private readonly float[] waveTable;
 		private int sampleRate;
 
 		public SineWaveTable(int sampleRate) {
@@ -47,7 +47,7 @@ namespace NAudioTest.WaveProviders.Tables
 	}
 
 	public class SawWaveTable : IWaveTable {
-		private float[] waveTable;
+		private readonly float[] waveTable;
 		private int sampleRate;
 		
 		public SawWaveTable(int sampleRate) {

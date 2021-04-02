@@ -10,8 +10,12 @@ namespace NAudioTest.IO
 		private MidiIn midiIn = null;
 		private bool canRead = false;
 
-		public MIDIHandler() {
+		private AudioPlaybackEngine engine;
+
+		public MIDIHandler(int driverSelection) {
 			// TODO: By default, this will select the 0 index MIDI device. This should be changed so that the user can select which one they want.
+			engine = new AudioPlaybackEngine(driverSelection);
+
 			selectDevice();
 			if (canRead) {
 				handleMidiMessages();
@@ -53,14 +57,15 @@ namespace NAudioTest.IO
 		private void midiIn_MessageReceived(object sender, MidiInMessageEventArgs e) {
 			if (e.MidiEvent is NoteOnEvent) {
 				NoteOnEvent noteOn = (NoteOnEvent)e.MidiEvent;
-				AudioPlaybackEngine.Instance.addActiveMIDIKey(noteOn.NoteNumber);
+				engine.addActiveMIDIKey(noteOn.NoteNumber);
 			} else if (e.MidiEvent is NoteEvent) {
 				NoteEvent noteOff = (NoteEvent)e.MidiEvent;
-				AudioPlaybackEngine.Instance.removeActiveMIDIKey(noteOff.NoteNumber);
+				engine.removeActiveMIDIKey(noteOff.NoteNumber);
 			}
 		}
 
 		public void Dispose() {
+			engine.Dispose();
 			if (canRead) {
 				midiIn.Stop();
 				midiIn.Dispose();

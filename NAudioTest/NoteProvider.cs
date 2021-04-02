@@ -18,7 +18,7 @@ namespace NAudioTest.WaveProviders {
 		private double phaseInc;
 
 		// Attack Decay Sustain Release:
-		private float attackInc, attackVol, decayInc, sustainVol, sustainInc, releaseInc;
+		private float attackInc, attackVol, decayInc, sustainVol, sustainInc, releaseInc, releaseLength;
 
 		private const int ATTACK = 0;
 		private const int DECAY = 1;
@@ -26,13 +26,8 @@ namespace NAudioTest.WaveProviders {
 		private const int RELEASE = 3;
 		private int currentStage;
 
-		Stopwatch timer;
-
 		public NoteProvider(float frequency, int sampleRate = 44100) {
 			WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, 2);
-
-			timer = new Stopwatch();
-			timer.Start();
 
 			phase = 0.0;
 			phaseInc = 0.0;
@@ -51,6 +46,7 @@ namespace NAudioTest.WaveProviders {
 
 		public void BeginRelease() {
 			currentStage = RELEASE;
+			SetReleaseIncrement();
 		}
 
 		public float Volume { get; set; }
@@ -99,18 +95,19 @@ namespace NAudioTest.WaveProviders {
 		public WaveFormat WaveFormat { get; set; }
 
 		public int Read(float[] buffer, int offset, int count) {
+			if (!playing)
+				return 0;
 
-			// Need to find a graceful way for this to finally return 0 when the audio is definintely finished. The
-			// 'playing' variable doesn't work properly, and this method keeps the read open for more reads. When
-			// lots of notes are played, this creates buffering issues with AudioPlaybackEngine trying to read from
-			// multiple NoteProviders at the same time. Returning 0 here would remove them and not cause this issue.
-
-			for (int n = 0; n < count; n++) {
+			for (int n = 0; n < count; ++n) {
 				Oscillate();
 
 				buffer[n + offset] = GetBufferValue() * Volume;
 
 				UpdateVolume();
+				if (Volume == 0.0f) {
+					playing = false;
+					return count - n;
+				}
 			}
 			return count;
 		}
@@ -161,11 +158,15 @@ namespace NAudioTest.WaveProviders {
 		}
 
 		public void SetReleaseValues(float releaseLength) {
-			releaseInc = (-sustainVol) / (releaseLength * sampleRate);
+			this.releaseLength = releaseLength;
+		}
+
+		public void SetReleaseIncrement() {
+			releaseInc = (0.0f - Volume) / (releaseLength * sampleRate);
 		}
 
 		public void SetSustainValues(float sustainVolume) {
-			sustainInc = (Volume - sustainVol) / (0.01f / sampleRate);
+			sustainInc = (Volume - sustainVol) / (sampleRate);
 			sustainVol = sustainVolume;
 		}
 

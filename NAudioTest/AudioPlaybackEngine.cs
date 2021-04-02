@@ -9,7 +9,7 @@ namespace NAudioTest.Engine
 {
 	class AudioPlaybackEngine : IDisposable
 	{
-		private readonly DirectSoundOut outputDevice;
+		private readonly AsioOut outputDevice;
 		private readonly MixingSampleProvider mixer;
 		private readonly SavingSampleProvider saver;
 
@@ -18,11 +18,11 @@ namespace NAudioTest.Engine
 
 		private NoteProvider[] activeNotes;
 
-		public AudioPlaybackEngine(int sampleRate = 44100, int channelCount = 2) {
+		public AudioPlaybackEngine(int driverSelection, int sampleRate = 44100, int channelCount = 2) {
 			this.sampleRate = sampleRate;
 			midiTools = new MIDITools();
 
-			outputDevice = new DirectSoundOut();
+			outputDevice = new AsioOut(AsioOut.GetDriverNames()[driverSelection]);
 			mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channelCount));
 			mixer.ReadFully = true;
 			saver = new SavingSampleProvider(mixer, "test.wav");
@@ -42,7 +42,7 @@ namespace NAudioTest.Engine
 					SinVolume = 1.0f,
 					SawVolume = 0.0f
 				};
-				activeNotes[i].SetRampValues(0.15f, 0.2f, 0.2f, 0.18f, 0.2f);
+				activeNotes[i].SetRampValues(0.2f, 0.2f, 0.2f, 0.18f, 0.2f);
 			}
 		}
 
@@ -52,8 +52,8 @@ namespace NAudioTest.Engine
 			if (output.Playing) {
 				output.BeginPlay();
 			} else {
-				AddMixerInput(output);
 				output.BeginPlay();
+				AddMixerInput(output);
 			}
 		}
 
@@ -84,6 +84,6 @@ namespace NAudioTest.Engine
 			saver.Dispose();
 		}
 
-		public static readonly AudioPlaybackEngine Instance = new AudioPlaybackEngine(44100, 2);
+		/*public static readonly AudioPlaybackEngine Instance = new AudioPlaybackEngine(44100, 2);*/
 	}
 }
